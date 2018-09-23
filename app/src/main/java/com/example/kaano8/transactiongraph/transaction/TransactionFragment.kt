@@ -23,10 +23,6 @@ class TransactionFragment : Fragment() {
     private lateinit var dateTimeFormatter: DateTimeFormatter
     private lateinit var repository: TransactionRepository
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
@@ -58,11 +54,7 @@ class TransactionFragment : Fragment() {
             invalidate()
 
         }
-
-
     }
-
-
 
     companion object {
         @JvmStatic
