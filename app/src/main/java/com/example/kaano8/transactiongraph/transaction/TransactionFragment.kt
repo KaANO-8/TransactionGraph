@@ -4,7 +4,9 @@ import android.os.Build
 import android.os.Bundle
 import android.support.annotation.RequiresApi
 import android.support.v4.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import com.example.kaano8.transactiongraph.R
@@ -12,12 +14,17 @@ import com.example.kaano8.transactiongraph.data.TransactionData
 import com.example.kaano8.transactiongraph.repository.TransactionRepository
 import com.example.kaano8.transactiongraph.utils.DateTimeFormatter
 import com.example.kaano8.transactiongraph.utils.HourAxisValueFormatter
+import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.highlight.Highlight
+import com.github.mikephil.charting.listener.ChartTouchListener
+import com.github.mikephil.charting.listener.OnChartGestureListener
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import kotlinx.android.synthetic.main.fragment_transaction.*
 
 
-class TransactionFragment : Fragment() {
+class TransactionFragment : Fragment(), OnChartGestureListener, OnChartValueSelectedListener {
 
     private lateinit var transactionData: TransactionData
     private lateinit var dateTimeFormatter: DateTimeFormatter
@@ -43,17 +50,73 @@ class TransactionFragment : Fragment() {
         val formattedData = dateTimeFormatter.formatData(transactionData)
         val lineDataSet = LineDataSet(formattedData, "Transactions")
         val lineData = LineData(lineDataSet)
+        lineChart?.apply {
+            onChartGestureListener = this@TransactionFragment
+            setOnChartValueSelectedListener(this@TransactionFragment)
+            setDrawGridBackground(false)
+            setTouchEnabled(true)
+            isDragEnabled = true
+            setScaleEnabled(true)
+            setPinchZoom(true)
+            animateX(2500)
+            isAutoScaleMinMaxEnabled = true
+        }
 
         val xAxis = lineChart?.xAxis
         xAxis?.apply {
             valueFormatter = HourAxisValueFormatter(dateTimeFormatter.getReferenceTimeStamp())
-            granularity = 1f
+            granularity = 1000*60f
         }
         lineChart?.apply {
             data = lineData
             invalidate()
 
         }
+    }
+
+    override fun onChartGestureEnd(me: MotionEvent?, lastPerformedGesture: ChartTouchListener.ChartGesture?) {
+        Log.i("Gesture", "END, lastGesture: " + lastPerformedGesture);
+        if(lastPerformedGesture != ChartTouchListener.ChartGesture.SINGLE_TAP)
+            lineChart?.highlightValues(null);
+    }
+
+    override fun onChartFling(me1: MotionEvent?, me2: MotionEvent?, velocityX: Float, velocityY: Float) {
+        Log.i("Fling", "Chart flinged. VeloX: " + velocityX + ", VeloY: " + velocityY);
+    }
+
+    override fun onChartSingleTapped(me: MotionEvent?) {
+        Log.i("SingleTap", "Chart single-tapped.");
+    }
+
+    override fun onChartGestureStart(me: MotionEvent?, lastPerformedGesture: ChartTouchListener.ChartGesture?) {
+        Log.i("Gesture", "START, x: " + me?.getX() + ", y: " + me?.getY());
+    }
+
+    override fun onChartScale(me: MotionEvent?, scaleX: Float, scaleY: Float) {
+        Log.i("Scale / Zoom", "ScaleX: " + scaleX + ", ScaleY: " + scaleY);
+    }
+
+    override fun onChartLongPressed(me: MotionEvent?) {
+        Log.i("LongPress", "Chart longpressed.");
+    }
+
+    override fun onChartDoubleTapped(me: MotionEvent?) {
+        Log.i("DoubleTap", "Chart double-tapped.");
+    }
+
+    override fun onChartTranslate(me: MotionEvent?, dX: Float, dY: Float) {
+        Log.i("Translate / Move", "dX: " + dX + ", dY: " + dY);
+    }
+
+    override fun onNothingSelected() {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun onValueSelected(e: Entry?, h: Highlight?) {
+        Log.i("Entry selected", e.toString());
+        Log.i("LOWHIGH", "low: " + lineChart?.getLowestVisibleX() + ", high: " + lineChart?.getHighestVisibleX());
+        Log.i("MIN MAX", "xmin: " + lineChart?.getXChartMin() + ", xmax: " + lineChart?.getXChartMax() + ", ymin: " + lineChart?.getYChartMin() + ", ymax: " + lineChart?.getYChartMax());
+
     }
 
     companion object {
