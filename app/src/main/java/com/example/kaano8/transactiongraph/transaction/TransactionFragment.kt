@@ -1,5 +1,7 @@
 package com.example.kaano8.transactiongraph.transaction
 
+import android.graphics.Color
+import android.graphics.DashPathEffect
 import android.os.Build
 import android.os.Bundle
 import android.support.annotation.RequiresApi
@@ -29,6 +31,7 @@ class TransactionFragment : Fragment(), OnChartGestureListener, OnChartValueSele
     private lateinit var transactionData: TransactionData
     private lateinit var dateTimeFormatter: DateTimeFormatter
     private lateinit var repository: TransactionRepository
+    private lateinit var hourAxisValueFormatter: HourAxisValueFormatter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -40,6 +43,7 @@ class TransactionFragment : Fragment(), OnChartGestureListener, OnChartValueSele
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         repository = TransactionRepository()
+
         transactionData = TransactionData(repository.getTransactions(), repository.getTransactionsDate())
         initGraph(transactionData)
     }
@@ -47,8 +51,35 @@ class TransactionFragment : Fragment(), OnChartGestureListener, OnChartValueSele
     @RequiresApi(Build.VERSION_CODES.O)
     private fun initGraph(transactionData: TransactionData) {
         dateTimeFormatter = DateTimeFormatter()
+        val dataColors = IntArray(transactionData.amount.size)
+
         val formattedData = dateTimeFormatter.formatData(transactionData)
         val lineDataSet = LineDataSet(formattedData, "Transactions")
+
+        formattedData.forEachIndexed { index, entry ->
+            if (entry.y > 0)
+                dataColors[index] = R.color.green
+            else
+                dataColors[index] = R.color.red
+        }
+
+
+        lineDataSet.apply {
+            enableDashedLine(10f, 5f, 0f)
+            enableDashedHighlightLine(10f, 5f, 0f)
+            color = Color.BLACK
+            setCircleColors(dataColors, context)
+            lineWidth = 1f
+            circleRadius = 5f
+            setDrawCircleHole(true)
+            valueTextSize = 9f
+            //setDrawFilled(true)
+            formLineWidth = 1f
+            formLineDashEffect = DashPathEffect(floatArrayOf(10f, 5f), 0f)
+            formSize = 15f
+        }
+
+
         val lineData = LineData(lineDataSet)
         lineChart?.apply {
             onChartGestureListener = this@TransactionFragment
@@ -57,14 +88,17 @@ class TransactionFragment : Fragment(), OnChartGestureListener, OnChartValueSele
             setTouchEnabled(true)
             isDragEnabled = true
             setScaleEnabled(true)
-            setPinchZoom(true)
+            setPinchZoom(false)
             animateX(2500)
             isAutoScaleMinMaxEnabled = true
+            description.isEnabled = false
+            axisRight.isEnabled = false
         }
 
         val xAxis = lineChart?.xAxis
+        hourAxisValueFormatter = HourAxisValueFormatter(dateTimeFormatter.getReferenceTimeStamp())
         xAxis?.apply {
-            valueFormatter = HourAxisValueFormatter(dateTimeFormatter.getReferenceTimeStamp())
+            valueFormatter = hourAxisValueFormatter
             granularity = 1000*60f
         }
         lineChart?.apply {
@@ -93,6 +127,8 @@ class TransactionFragment : Fragment(), OnChartGestureListener, OnChartValueSele
     }
 
     override fun onChartScale(me: MotionEvent?, scaleX: Float, scaleY: Float) {
+        hourAxisValueFormatter.updateDataFormat(scaleX)
+        //lineChart?.invalidate()
         Log.i("Scale / Zoom", "ScaleX: " + scaleX + ", ScaleY: " + scaleY);
     }
 

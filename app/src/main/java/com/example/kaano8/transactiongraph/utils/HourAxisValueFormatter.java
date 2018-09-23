@@ -20,8 +20,15 @@ public class HourAxisValueFormatter implements IAxisValueFormatter
 
     public HourAxisValueFormatter(long referenceTimestamp) {
         this.referenceTimestamp = referenceTimestamp;
-        this.mDataFormat = new SimpleDateFormat("MMM dd hh:mm", Locale.ENGLISH);
+        this.mDataFormat = new SimpleDateFormat("MMM dd", Locale.ENGLISH);
         this.mDate = new Date();
+    }
+
+    public void updateDataFormat(Float scaleX) {
+        if (scaleX < 10) {
+            mDataFormat = new SimpleDateFormat("MMM dd", Locale.ENGLISH);
+        } else
+            mDataFormat = new SimpleDateFormat("MMM dd hh:mm", Locale.ENGLISH);
     }
 
 
